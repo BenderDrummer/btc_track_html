@@ -1,6 +1,6 @@
 # BTC P/L Tracker
 
-This is just a simple BTC P/L tracker using public Kraken API date for the BTC/USD pair
+This is just a simple BTC P/L tracker using public Kraken API price data for the BTC/USD pair
 
 - Put in a BTC quantity
 
