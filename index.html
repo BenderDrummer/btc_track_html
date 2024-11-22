@@ -21,10 +21,6 @@
             color: black;
             font-size: 4em;
         }
-        /* Standard text for other elements */
-        .neutral {
-            color: black;
-        }
         table, th, td {
             border: 1px solid black;
             border-collapse: collapse;
@@ -36,7 +32,7 @@
 
 <h1>BTC Investment Tracker</h1>
 
-<!-- Form to input purchase details -->
+<!-- Form to input purchase details and select time zone -->
 <div>
     <label for="btcAmount">Amount of BTC bought:</label>
     <input type="number" id="btcAmount" step="0.0001" placeholder="e.g., 0.1">
@@ -44,11 +40,20 @@
     <label for="purchasePrice">Purchase Price per BTC (USD):</label>
     <input type="number" id="purchasePrice" step="0.01" placeholder="e.g., 35000">
     
+    <label for="timeZoneSelect">Select Your Time Zone:</label>
+    <select id="timeZoneSelect">
+        <option value="America/New_York">Eastern Time (ET)</option>
+        <option value="America/Chicago">Central Time (CT)</option>
+        <option value="America/Denver">Mountain Time (MT)</option>
+        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+        <option value="UTC">Coordinated Universal Time (UTC)</option>
+    </select>
+    
     <button onclick="initializeCalculation()">Start Tracking</button>
 </div>
 
 <h2>Live BTC Prices</h2>
-<p>Current Central Time: <span id="centralTime"></span></p>
+<p>Current Time (<span id="timeZoneLabel">Central Time</span>): <span id="localTime"></span></p>
 <p>Kraken Price: <span id="krakenPrice" class="neutral">$0</span></p>
 
 <h2>Investment Summary</h2>
@@ -58,7 +63,7 @@
 <h2>30-Minute Update Log</h2>
 <table id="updateLog">
     <tr>
-        <th>Timestamp (Central Time)</th>
+        <th>Timestamp (<span id="timeZoneLogLabel">Central Time</span>)</th>
         <th>Kraken Price</th>
         <th>Total BTC Value</th>
         <th>Profit/Loss</th>
@@ -70,24 +75,29 @@
     let btcAmount = 0;
     let purchasePrice = 0;
     let trackingActive = false;
+    let userTimeZone = "America/Chicago";
 
-    // Initialize the calculation when button is pressed
     function initializeCalculation() {
         btcAmount = parseFloat(document.getElementById('btcAmount').value);
         purchasePrice = parseFloat(document.getElementById('purchasePrice').value);
+        userTimeZone = document.getElementById('timeZoneSelect').value;
 
         if (isNaN(btcAmount) || isNaN(purchasePrice)) {
             alert("Please enter valid numbers for BTC amount and purchase price.");
             return;
         }
 
-        trackingActive = true; // Start automatic calculation
-        fetchPrices(); // Initial fetch and calculation
+        // Update time zone labels
+        const timeZoneLabel = document.getElementById('timeZoneSelect').selectedOptions[0].text;
+        document.getElementById('timeZoneLabel').textContent = timeZoneLabel;
+        document.getElementById('timeZoneLogLabel').textContent = timeZoneLabel;
+
+        trackingActive = true; // Start tracking
+        fetchPrices(); // Initial fetch
         setInterval(fetchPrices, 10000); // Fetch prices every 10 seconds
         setInterval(logUpdate, 1800000); // Log updates every 30 minutes
     }
 
-    // Fetch Kraken price every 10 seconds
     async function fetchPrices() {
         const krakenUrl = "https://api.kraken.com/0/public/Ticker?pair=XBTUSD";
 
@@ -97,7 +107,6 @@
             const krakenPrice = parseFloat(krakenData.result.XXBTZUSD.c[0]);
             updatePriceDisplay('krakenPrice', krakenPrice);
 
-            // Calculate profit/loss automatically if tracking is active
             if (trackingActive) {
                 calculateProfitLoss(krakenPrice);
             }
@@ -106,20 +115,17 @@
             console.error("Error fetching Kraken price:", error);
         }
 
-        // Update Central Time display
-        const centralTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-        document.getElementById('centralTime').textContent = centralTime;
+        // Update local time
+        const localTime = new Date().toLocaleString("en-US", { timeZone: userTimeZone });
+        document.getElementById('localTime').textContent = localTime;
     }
 
-    // Update price display without large font size
     function updatePriceDisplay(elementId, price) {
         const element = document.getElementById(elementId);
         element.textContent = `$${price.toFixed(2)}`;
-        element.className = price > lastKrakenPrice ? 'neutral' : 'neutral';
         lastKrakenPrice = price;
     }
 
-    // Calculate and update the profit or loss based on live Kraken price
     function calculateProfitLoss(currentPrice) {
         const totalCurrentValue = btcAmount * currentPrice;
         const totalPurchaseValue = btcAmount * purchasePrice;
@@ -132,20 +138,15 @@
         profitLossElement.className = profitLoss > 0 ? 'profit' : profitLoss < 0 ? 'loss' : 'neutral';
     }
 
-    // Log the update every 30 minutes with the current time and values
     function logUpdate() {
         if (!trackingActive || lastKrakenPrice === 0) return;
 
-        // Get current Central Time
-        const currentTime = new Date().toLocaleString("en-US", { timeZone: "America/Chicago" });
-
-        // Get the latest total BTC value and profit/loss
+        const currentTime = new Date().toLocaleString("en-US", { timeZone: userTimeZone });
         const totalCurrentValue = btcAmount * lastKrakenPrice;
         const totalPurchaseValue = btcAmount * purchasePrice;
         const profitLoss = totalCurrentValue - totalPurchaseValue;
         const profitLossPercentage = ((profitLoss / totalPurchaseValue) * 100).toFixed(2);
 
-        // Create a new row for the log
         const table = document.getElementById('updateLog');
         const newRow = table.insertRow();
 
