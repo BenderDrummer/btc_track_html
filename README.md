@@ -15,4 +15,6 @@ It will track P/L and record in a table every 30mins
 
 'Print' a PDF from your browser to save it locally.
 
+[https://benderdrummer.github.io/btc_track_html/index.html](https://benderdrummer.github.io/btc_track_html/index.html)
+
 Enjoy!
